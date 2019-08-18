@@ -124,3 +124,40 @@ it('should not go wrong when using an api twice', function () {
     expect(result.code).toMatchSnapshot();
   }).not.toThrowError()
 })
+
+it('should preserve default imports', function () {
+  const code = `
+    import Taro from '@tarojs/taro-h5'
+    console.log(Taro)
+  `
+  const result = babel.transform(code, { plugins: [pluginOptions] })
+  expect(result.code).toMatchSnapshot();
+})
+
+it('should preserve assignments in lefthands', function () {
+  const code = `
+    import Taro from '@tarojs/taro-h5'
+    let animation 
+    animation = Taro.createAnimation({
+      transformOrigin: "50% 50%",
+      duration: 1000,
+      timingFunction: "ease",
+      delay: 0
+    });
+    Taro.request()
+    Taro.request = ''
+    Taro['request'] = ''
+  `
+  const result = babel.transform(code, { plugins: [pluginOptions] })
+  expect(result.code).toMatchSnapshot();
+})
+
+it('should support rename of imported names', function () {
+  const code = `
+  // import { inject as mobxInject, observer as mobxObserver } from '@tarojs/mobx'
+  import { Component as TaroComponent } from "@tarojs/taro-h5";
+  export class Connected extends TaroComponent {}
+  `
+  const result = babel.transform(code, { plugins: [pluginOptions] })
+  expect(result.code).toMatchSnapshot();
+})

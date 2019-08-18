@@ -1,4 +1,4 @@
-import { StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, ViewStyle } from 'react-native'
 
 export type NativeEvent = {
   timestamp: number;
@@ -7,10 +7,6 @@ export type NativeEvent = {
   pageY: number;
   touches: any[];
   changedTouches: any[];
-}
-
-export type TouchableEvent = {
-  nativeEvent: NativeEvent;
 }
 
 export type ClickableEventRet = {
@@ -31,5 +27,7 @@ export interface ClickableProps {
   onClick?: (event: ClickableEventRet) => void;
   onLongPress?: (event: ClickableEventRet) => void;
   onTouchstart?: (event: ClickableEventRet) => void;
+  onTouchmove?: (event: ClickableEventRet) => void;
+  onTouchcancel?: (event: ClickableEventRet) => void;
   onTouchend?: (event: ClickableEventRet) => void;
 }

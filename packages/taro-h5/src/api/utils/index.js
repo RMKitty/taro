@@ -60,22 +60,44 @@ function serializeParams (params) {
     return ''
   }
   return Object.keys(params)
-    .map(key => (`${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)).join('&')
+    .map(key => (
+      `${encodeURIComponent(key)}=${typeof (params[key]) ==="object" ?
+        encodeURIComponent(JSON.stringify(params[key])):
+        encodeURIComponent(params[key])}`))
+    .join('&')
 }
 
 function temporarilyNotSupport (apiName) {
-  return () => console.error(`暂时不支持 API ${apiName}`)
+  return () => {
+    const errMsg = `暂时不支持 API ${apiName}`
+    console.error(errMsg)
+    return Promise.reject({
+      errMsg
+    })
+  }
 }
 
 function weixinCorpSupport (apiName) {
-  return () => console.error(`h5端仅在微信公众号中支持 API ${apiName}`)
+  return () => {
+    const errMsg = `h5端仅在微信公众号中支持 API ${apiName}`
+    console.error(errMsg)
+    return Promise.reject({
+      errMsg
+    })
+  }
 }
 
 function permanentlyNotSupport (apiName) {
-  return () => console.error(`不支持 API ${apiName}`)
+  return () => {
+    const errMsg = `不支持 API ${apiName}`
+    console.error(errMsg)
+    return Promise.reject({
+      errMsg
+    })
+  }
 }
 
-const VALID_COLOR_REG = /^#\d{6}$/
+const VALID_COLOR_REG = /^#[0-9a-fA-F]{6}$/
 
 const isValidColor = (color) => {
   return VALID_COLOR_REG.test(color)
@@ -97,8 +119,11 @@ const createCallbackManager = () => {
    * @param {{ callback: function, ctx: any } | function} opt
    */
   const remove = (opt) => {
-    const pos = callbacks.findIndex(callback => {
-      return callback === opt
+    let pos = -1
+    callbacks.forEach((callback, k) => {
+      if (callback === opt) {
+        pos = k
+      }
     })
     if (pos > -1) {
       callbacks.splice(pos, 1)
@@ -151,9 +176,11 @@ const createScroller = () => {
 
   const listen = callback => {
     el.addEventListener('scroll', callback)
+    document.body.addEventListener('touchmove', callback)
   }
   const unlisten = callback => {
     el.removeEventListener('scroll', callback)
+    document.body.removeEventListener('touchmove', callback)
   }
 
   const isReachBottom = (distance = 0) => {
@@ -163,7 +190,7 @@ const createScroller = () => {
   return { listen, unlisten, getPos, isReachBottom }
 }
 
-function processApis (apiName, defaultOptions, formatResult = res => res, formatParams = options => options) {
+function processOpenapi (apiName, defaultOptions, formatResult = res => res, formatParams = options => options) {
   if (!window.wx) {
     return weixinCorpSupport(apiName)
   }
@@ -172,12 +199,13 @@ function processApis (apiName, defaultOptions, formatResult = res => res, format
     let obj = Object.assign({}, defaultOptions, options)
     const p = new Promise((resolve, reject) => {
       ;['fail', 'success', 'complete'].forEach(k => {
-        obj[k] = res => {
+        obj[k] = oriRes => {
+          const res = formatResult(oriRes)
           options[k] && options[k](res)
           if (k === 'success') {
-            resolve(formatResult(res))
+            resolve(res)
           } else if (k === 'fail') {
-            reject(formatResult(res))
+            reject(res)
           }
         }
       })
@@ -220,7 +248,7 @@ export {
   isFunction,
   createCallbackManager,
   createScroller,
-  processApis,
+  processOpenapi,
   findRef,
   easeInOut,
   getTimingFunc

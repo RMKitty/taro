@@ -1,17 +1,46 @@
+/* eslint camelcase: [1] */
+
 import {
   ENV_TYPE,
   eventCenter,
   Events,
   getEnv,
   initPxTransform as originalInitPxTransform,
-  /* eslint-disable-next-line camelcase */
   internal_safe_get,
-  /* eslint-disable-next-line camelcase */
   internal_safe_set,
   render,
   interceptors
 } from '@tarojs/taro'
-import Nerv from 'nervjs'
+import Nerv, {
+  Children,
+  createElement,
+  cloneElement,
+  nextTick,
+  options,
+  findDOMNode,
+  isValidElement,
+  unmountComponentAtNode,
+  createPortal,
+  unstable_renderSubtreeIntoContainer,
+  hydrate,
+  createFactory,
+  unstable_batchedUpdates,
+  version,
+  PropTypes,
+  createRef,
+  forwardRef,
+  memo,
+  createContext,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useImperativeHandle,
+  useContext
+} from 'nervjs'
 
 import { permanentlyNotSupport } from '../api/utils'
 
@@ -22,7 +51,37 @@ const taro = {
   eventCenter,
   render,
   internal_safe_set,
-  internal_safe_get
+  internal_safe_get,
+  Children,
+  createElement,
+  cloneElement,
+  nextTick,
+  options,
+  findDOMNode,
+  isValidElement,
+  unmountComponentAtNode,
+  createPortal,
+  /* eslint-disable-next-line camelcase */
+  unstable_renderSubtreeIntoContainer,
+  hydrate,
+  createFactory,
+  /* eslint-disable-next-line camelcase */
+  unstable_batchedUpdates,
+  version,
+  PropTypes,
+  createRef,
+  forwardRef,
+  memo,
+  createContext,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useImperativeHandle,
+  useContext
 }
 
 class Component extends Nerv.Component {
@@ -40,6 +99,14 @@ class Component extends Nerv.Component {
   set $app (app) {
     console.warn('Property "$app" is read-only.')
   }
+
+  get $component () {
+    return this
+  }
+
+  set $component (app) {
+    console.warn('Property "$component" is read-only.')
+  }
 }
 
 class PureComponent extends Nerv.PureComponent {
@@ -56,6 +123,14 @@ class PureComponent extends Nerv.PureComponent {
 
   set $app (app) {
     console.warn('Property "$app" is read-only.')
+  }
+
+  get $component () {
+    return this
+  }
+
+  set $component (app) {
+    console.warn('Property "$component" is read-only.')
   }
 }
 
@@ -93,7 +168,11 @@ const getRouter = function () {
 }
 const pxTransform = function (size) {
   const { designWidth } = taro.config
-  return Math.ceil((parseInt(size, 10) / 40 * 640 / designWidth) * 10000) / 10000 + 'rem'
+  return (
+    Math.ceil((((parseInt(size, 10) / 40) * 640) / designWidth) * 10000) /
+      10000 +
+    'rem'
+  )
 }
 const canIUseWebp = function () {
   const canvas = document.createElement('canvas')
@@ -110,22 +189,51 @@ taro.canIUseWebp = canIUseWebp
 taro.interceptors = interceptors
 
 export default taro
+
 export {
   getEnv,
   ENV_TYPE,
   Events,
   eventCenter,
   render,
-  interceptors,
-  /* eslint-disable-next-line camelcase */
   internal_safe_set,
-  /* eslint-disable-next-line camelcase */
   internal_safe_get,
+  Children,
+  createElement,
+  cloneElement,
+  options,
+  findDOMNode,
+  isValidElement,
+  unmountComponentAtNode,
+  createPortal,
+  /* eslint-disable-next-line camelcase */
+  unstable_renderSubtreeIntoContainer,
+  hydrate,
+  createFactory,
+  /* eslint-disable-next-line camelcase */
+  unstable_batchedUpdates,
+  version,
+  PropTypes,
+  createRef,
+  forwardRef,
+  memo,
+  createContext,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useImperativeHandle,
+  useContext,
+
   Component,
   PureComponent,
   initPxTransform,
   requirePlugin,
   getApp,
   pxTransform,
-  canIUseWebp
+  canIUseWebp,
+  interceptors
 }

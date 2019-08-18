@@ -31,7 +31,7 @@ taro-init(1) does not exist, try --help
 
 ## 小程序
 
-### 没有任何报错，但显示的结果不如预期
+### 没有任何报错，但显示的结果不如预期
 
 #### 被 diff 逻辑过滤
 
@@ -189,6 +189,20 @@ Input 组件可以通过在回调中 return 需要改变的值来更新视图。
 
 其它组件需要立即 `setState({ value: e.detail.value })` 以立即更新同步 data.value 值，然后再 setState 真正需要表单改变的值。详见 [#1981](https://github.com/NervJS/taro/issues/1981)、[#2257](https://github.com/NervJS/taro/issues/2257)
 
+### API 问题
+
+#### API 调用结果不符合预期
+
+Taro 小程序端的 API 只是对小程序原生 API 简单地进行了 promise 化，并没有做什么额外操作。因此开发者在遇到这种情况时可以试试直接使用小程序 API，如微信小程序中直接使用 `wx.xxx`。如果有同样的报错，证明是小程序方面的问题。否则则可能是 Taro 的问题，可以给我们提相关 issue。
+
+#### API 调用报错
+
+假设开发者在调用某个 API `Taro.xxx`，出现类似以下报错：
+
+![image](https://user-images.githubusercontent.com/11807297/59170450-45324b00-8b71-11e9-8e25-1169b425040c.png)
+
+证明 Taro 还没兼容此 API，比如一些小程序平台最新更新的 API。这时可以给我们提 issue 要求添加，或者修改此文件 [native-apis.js](https://github.com/NervJS/taro/blob/master/packages/taro/src/native-apis.js) 后，给我们提 PR。
+
 ## H5
 
 ### 运行时报 DOM 相关错误
@@ -248,6 +262,19 @@ const Block = (props) => <div>{props.children}</div>
 当你遇到了相关问题时，我们准备了一个快速起步的沙盒工具，你可以直接在这个工具里编辑、调试、复现问题：
 
 [![Edit Taro sandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/50nzv622z4?fontsize=14)
+## 组件
+
+### jsEnginScriptError
+
+`Component is not found in path "xxx/xxx/xxx"` 解决办法：
+
+1、检查有没有编译报错
+
+2、检查编译后的文件是否正确
+
+3、步骤 1 和 步骤 2 如果检查没有问题，重启开发者工具，否则跳到步骤 4 
+
+4、提供具体编译报错信息与编译后文件信息的截图
 
 ## 其它资源
 

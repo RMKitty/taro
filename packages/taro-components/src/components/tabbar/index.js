@@ -65,19 +65,22 @@ class Tabbar extends Nerv.Component {
   }
 
   getOriginUrl = url => {
-    const customRoute = this.customRoutes.find(([originUrl, customUrl]) => {
+    const customRoute = this.customRoutes.filter(([originUrl, customUrl]) => {
       const patha = splitUrl(customUrl).path
       const pathb = splitUrl(url).path
       return patha === pathb
     })
-    return customRoute ? customRoute[0] : url
+    return customRoute.length ? customRoute[0][0] : url
   }
 
   getSelectedIndex = url => {
-    const foundIndex = this.state.list.findIndex(({ pagePath }) => {
+    let foundIndex = -1
+    this.state.list.forEach(({ pagePath }, idx) => {
       const patha = splitUrl(url).path
       const pathb = splitUrl(pagePath).path
-      return patha === pathb
+      if (patha === pathb) {
+        foundIndex = idx
+      }
     })
     return foundIndex
   }

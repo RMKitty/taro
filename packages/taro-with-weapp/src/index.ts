@@ -56,6 +56,9 @@ export default function withWeapp (componentType: string, weappConf?: Object) {
     class BaseComponent<_ = {}, S = {}> extends ConnectComponent {
       constructor (props) {
         super(props)
+        if (Array.isArray(super._observeProps)) {
+          this._observeProps = super._observeProps
+        }
         defineGetter(this, 'data', 'state')
         if (isComponent) {
           defineGetter(this, 'properties', 'props')
@@ -118,6 +121,19 @@ export default function withWeapp (componentType: string, weappConf?: Object) {
       }
 
       componentWillMount () {
+        if (Array.isArray(this._observeProps)) {
+          this._observeProps.forEach(({ name: key, observer }) => {
+            const prop = this.props[key]
+            if (typeof observer === 'string') {
+              const ob = this[observer]
+              if (isFunction(ob)) {
+                ob.call(this, prop, prop, key)
+              }
+            } else if (isFunction(observer)) {
+              observer.call(this, prop, prop, key)
+            }
+          })
+        }
         this.executeComponentFunc(this.created)
         this.safeExecute(this.onLoad)
         if (super.componentWillMount) {

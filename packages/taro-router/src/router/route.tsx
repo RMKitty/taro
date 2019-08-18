@@ -1,9 +1,9 @@
-import { Component } from '@tarojs/taro-h5';
-import Nerv from 'nervjs';
+import Taro from '@tarojs/taro-h5'
+import Nerv, { nextTick } from 'nervjs'
 
-import createWrappedComponent from './createWrappedComponent';
-import { Location, RouteObj } from '../utils/types';
-import { tryToCall } from '../utils/index';
+import { tryToCall } from '../utils'
+import { Location, RouteObj } from '../utils/types'
+import createWrappedComponent from './createWrappedComponent'
 
 type RouteProps = RouteObj & {
   currentLocation: Location;
@@ -32,7 +32,7 @@ const getScroller = () => {
 }
 let scroller
 
-class Route extends Component<RouteProps, {}> {
+class Route extends Taro.Component<RouteProps, {}> {
   matched = false;
   wrappedComponent;
   componentRef;
@@ -49,16 +49,19 @@ class Route extends Component<RouteProps, {}> {
     const path = currentLocation.path;
     const key = currentLocation.state.key;
     const isIndex = this.props.isIndex;
-    if (isIndex && path === '/') return true
-    return key === this.props.key
+    if (key !== undefined) {
+      return key === this.props.key
+    } else {
+      return isIndex && path === '/'
+    }
   }
 
-  getWrapRef = (ref) => {
-    this.containerRef = ref
+  getWrapRef = ref => {
+    if (ref) this.containerRef = ref
   }
 
-  getRef = (ref) => {
-    this.componentRef = ref
+  getRef = ref => {
+    if (ref) this.componentRef = ref
     this.props.collectComponent(ref, this.props.k)
   }
 
@@ -76,13 +79,10 @@ class Route extends Component<RouteProps, {}> {
       })
   }
 
-  componentWillMount () {
-    this.updateComponent()
-  }
-
   componentDidMount () {
     scroller = scroller || getScroller()
     scroller.set(0)
+    this.updateComponent()
   }
 
   componentWillReceiveProps (nProps, nContext) {
@@ -98,18 +98,23 @@ class Route extends Component<RouteProps, {}> {
 
     this.matched = nextMatched
 
+    
     if (nextMatched) {
-      this.showPage()
       if (!isRedirect) {
-        scroller = scroller || getScroller()
-        scroller.set(this.scrollPos)
+        nextTick(() => {
+          this.showPage()
+          scroller = scroller || getScroller()
+          scroller.set(this.scrollPos)
+        })
         tryToCall(this.componentRef.componentDidShow, this.componentRef)
       }
     } else {
       scroller = scroller || getScroller()
       this.scrollPos = scroller.get()
-      this.hidePage()
-      tryToCall(this.componentRef.componentDidHide, this.componentRef)
+      nextTick(() => {
+        this.hidePage()
+        tryToCall(this.componentRef.componentDidHide, this.componentRef)
+      })
     }
   }
 
@@ -120,11 +125,17 @@ class Route extends Component<RouteProps, {}> {
 
   showPage () {
     const dom = this.containerRef
+    if (!dom) {
+      return console.error(`showPage:fail Received a falsy component for route "${this.props.path}". Forget to export it?`)
+    }
     dom.style.display = 'block'
   }
 
   hidePage () {
     const dom = this.containerRef
+    if (!dom) {
+      return console.error(`hidePage:fail Received a falsy component for route "${this.props.path}". Forget to export it?`)
+    }
     dom.style.display = 'none'
   }
 

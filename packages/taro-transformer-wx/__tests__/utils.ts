@@ -45,7 +45,11 @@ var Current = {
 }
 
 function genLoopCompid () {
-  return 'id'
+  return null
+}
+
+function genCompid () {
+  return undefined
 }
 
 var propsManager = {
@@ -124,6 +128,7 @@ export const baseOptions = {
   isApp: false,
   sourcePath: __dirname,
   outputPath: __dirname,
+  sourcetDir: __dirname,
   code: '',
   isTyped: false
 }

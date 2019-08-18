@@ -5,9 +5,10 @@ import traverse, { NodePath, Visitor } from 'babel-traverse'
 import { buildTemplate, DEFAULT_Component_SET, buildImportStatement, buildBlockElement, parseCode, codeFrameError, isValidVarName } from './utils'
 import { specialEvents } from './events'
 import { parseTemplate, parseModule } from './template'
-import { usedComponents, errors, globals } from './global'
+import { usedComponents, errors, globals, THIRD_PARTY_COMPONENTS } from './global'
 import { reserveKeyWords } from './constant'
-import { parseExpression } from 'babylon'
+import { parse as parseFile } from 'babylon'
+const { prettyPrint } = require('html')
 
 const allCamelCase = (str: string) =>
   str.charAt(0).toUpperCase() + camelCase(str.substr(1))
@@ -123,21 +124,24 @@ export const createWxmlVistor = (
       }
     }
   }
+
+  const renameJSXKey = (path: NodePath<t.JSXIdentifier>) => {
+    const nodeName = path.node.name
+    if (path.parentPath.isJSXAttribute()) {
+      if (nodeName === WX_KEY) {
+        path.replaceWith(t.jSXIdentifier('key'))
+      }
+      if (nodeName.startsWith('wx:') && !wxTemplateCommand.includes(nodeName)) {
+        // tslint:disable-next-line
+        console.log(`未知 wx 作用域属性： ${nodeName}，该属性会被移除掉。`)
+        path.parentPath.remove()
+      }
+    }
+  }
+
   return {
     JSXAttribute: jsxAttrVisitor,
-    JSXIdentifier (path) {
-      const nodeName = path.node.name
-      if (path.parentPath.isJSXAttribute()) {
-        if (nodeName === WX_KEY) {
-          path.replaceWith(t.jSXIdentifier('key'))
-        }
-        if (nodeName.startsWith('wx:') && !wxTemplateCommand.includes(nodeName)) {
-          // tslint:disable-next-line
-          console.log(`未知 wx 作用域属性： ${nodeName}，该属性会被移除掉。`)
-          path.parentPath.remove()
-        }
-      }
-    },
+    JSXIdentifier: renameJSXKey,
     JSXElement: {
       enter (path: NodePath<t.JSXElement>) {
         const openingElement = path.get('openingElement')
@@ -159,7 +163,8 @@ export const createWxmlVistor = (
               refIds.add(p.node.name)
             }
           },
-          JSXAttribute: jsxAttrVisitor
+          JSXAttribute: jsxAttrVisitor,
+          JSXIdentifier: renameJSXKey
         })
         const slotAttr = attrs.find(a => a.node.name.name === 'slot')
         if (slotAttr) {
@@ -236,9 +241,9 @@ export const createWxmlVistor = (
             let usedTemplate = new Set<string>()
 
             traverse(ast, {
-              JSXIdentifier (p) {
-                const node = p.node
-                if (node.name.endsWith('Tmpl') && node.name.length > 4 && p.parentPath.isJSXOpeningElement()) {
+              JSXIdentifier (path) {
+                const node = path.node
+                if (node.name.endsWith('Tmpl') && node.name.length > 4 && path.parentPath.isJSXOpeningElement()) {
                   usedTemplate.add(node.name)
                 }
               }
@@ -294,6 +299,14 @@ export function parseWXML (dirPath: string, wxml?: string, parseImport?: boolean
   imports: Imports[]
   refIds: Set<string>
 } {
+  try {
+    wxml = prettyPrint(wxml, {
+      max_char: 0,
+      unformatted: ['text']
+    })
+  } catch (error) {
+    //
+  }
   if (!parseImport) {
     errors.length = 0
     usedComponents.clear()
@@ -595,9 +608,9 @@ function findWXIfProps (
   return matches
 }
 
-function parseNode (node: AllKindNode) {
+function parseNode (node: AllKindNode, tagName?: string) {
   if (node.type === NodeType.Text) {
-    return parseText(node)
+    return parseText(node, tagName)
   } else if (node.type === NodeType.Comment) {
     const emptyStatement = t.jSXEmptyExpression()
     emptyStatement.innerComments = [{
@@ -610,7 +623,7 @@ function parseNode (node: AllKindNode) {
 }
 
 function parseElement (element: Element): t.JSXElement {
-  const tagName = t.jSXIdentifier(allCamelCase(element.tagName))
+  const tagName = t.jSXIdentifier(THIRD_PARTY_COMPONENTS.has(element.tagName) ? element.tagName : allCamelCase(element.tagName))
   if (DEFAULT_Component_SET.has(tagName.name)) {
     usedComponents.add(tagName.name)
   }
@@ -645,7 +658,7 @@ function parseElement (element: Element): t.JSXElement {
   return t.jSXElement(
     t.jSXOpeningElement(tagName, attributes.map(parseAttribute)),
     t.jSXClosingElement(tagName),
-    removEmptyTextAndComment(element.children).map(parseNode),
+    removEmptyTextAndComment(element.children).map((el) => parseNode(el, element.tagName)),
     false
   )
 }
@@ -658,7 +671,10 @@ function removEmptyTextAndComment (nodes: AllKindNode[]) {
   }).filter((node, index) => !(index === 0 && node.type === NodeType.Comment))
 }
 
-function parseText (node: Text) {
+function parseText (node: Text, tagName?: string) {
+  if (tagName === 'wxs') {
+    return t.jSXText(node.content)
+  }
   const { type, content } = parseContent(node.content)
   if (type === 'raw') {
     const text = content.replace(/([{}]+)/g,"{'$1'}")
@@ -717,7 +733,7 @@ function parseAttribute (attr: Attribute) {
     const { type, content } = parseContent(value)
 
     if (type === 'raw') {
-      jsxValue = t.stringLiteral(content)
+      jsxValue = t.stringLiteral(content.replace(/\"/g, `'`))
     } else {
       let expr: t.Expression
       try {
@@ -731,21 +747,9 @@ function parseAttribute (attr: Attribute) {
           } else {
             throw new Error(err)
           }
-        } else if (content.includes(':')) {
-          const [ key, value ] = pureContent.split(':')
-          expr = t.objectExpression([t.objectProperty(t.stringLiteral(key), parseExpression(value))])
-        } else if (content.includes('...') && content.includes(',')) {
-          const objExpr = content.slice(1, content.length - 1).split(',')
-          const props: (t.SpreadProperty | t.ObjectProperty)[] = []
-          for (const str of objExpr) {
-            const s = str.trim()
-            if (s.includes('...')) {
-              props.push(t.spreadProperty(t.identifier(s.slice(3))))
-            } else {
-              props.push(t.objectProperty(t.identifier(s), t.identifier(s)))
-            }
-          }
-          expr = t.objectExpression(props)
+        } else if (content.includes(':') || (content.includes('...') && content.includes(','))) {
+          const file = parseFile(`var a = ${attr.value!.slice(1, attr.value!.length - 1)}`, { plugins: ['objectRestSpread'] })
+          expr = file.program.body[0].declarations[0].init
         } else {
           const err = `转换模板参数： \`${key}: ${value}\` 报错`
           throw new Error(err)
@@ -767,7 +771,7 @@ function parseAttribute (attr: Attribute) {
     )
   }
 
-  if (key.startsWith('catch') && value && value === 'true') {
+  if (key.startsWith('catch') && value && (value === 'true' || value.trim() === '')) {
     jsxValue = t.jSXExpressionContainer(
       t.memberExpression(t.thisExpression(), t.identifier('privateStopNoop'))
     )

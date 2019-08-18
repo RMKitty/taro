@@ -18,10 +18,10 @@ class SwiperItem extends Nerv.Component {
 const createEvent = type => {
   let e
   try {
-    e = new TouchEvent(type);
-  } catch (e) {
-    e = document.createEvent('Event');
-    e.initEvent(type, true, true);
+    e = new TouchEvent(type)
+  } catch (err) {
+    e = document.createEvent('Event')
+    e.initEvent(type, true, true)
   }
   return e
 }
@@ -32,6 +32,7 @@ class Swiper extends Nerv.Component {
     this.$el = null
     this._id = INSTANCE_ID + 1
     INSTANCE_ID++
+    this._$current = 0
   }
 
   componentDidMount () {
@@ -48,6 +49,7 @@ class Swiper extends Nerv.Component {
       spaceBetween
     } = this.props
 
+    const that = this
     const opt = {
       // 指示器
       pagination: { el: `.taro-swiper-${this._id} .swiper-pagination` },
@@ -68,6 +70,7 @@ class Swiper extends Nerv.Component {
               }
             })
           } catch (err) {}
+          that._$current = this.realIndex
           onChange && onChange(e)
         },
         transitionEnd () {
@@ -104,9 +107,16 @@ class Swiper extends Nerv.Component {
 
   componentWillReceiveProps (nextProps) {
     if (this.mySwiper) {
-      const nextCurrent = nextProps.current || 0
+      let nextCurrent = 0
+      if (nextProps.current === 0) {
+        nextCurrent = this._$current || 0
+      } else {
+        nextCurrent = nextProps.current || this._$current || 0
+      }
       // 是否衔接滚动模式
       if (nextProps.circular) {
+        this.mySwiper.loopDestroy()
+        this.mySwiper.loopCreate()
         this.mySwiper.slideToLoop(parseInt(nextCurrent, 10)) // 更新下标
       } else {
         this.mySwiper.slideTo(parseInt(nextCurrent, 10)) // 更新下标
@@ -125,6 +135,13 @@ class Swiper extends Nerv.Component {
     let defaultIndicatorColor = indicatorColor || 'rgba(0, 0, 0, .3)'
     let defaultIndicatorActiveColor = indicatorActiveColor || '#000'
     const cls = classNames(`taro-swiper-${this._id}`, 'swiper-container', className)
+    const paginationCls = classNames(
+      'swiper-pagination',
+      {
+        'swiper-pagination-hidden': !this.props.indicatorDots,
+        'swiper-pagination-bullets': this.props.indicatorDots
+      }
+    )
     return (
       <div className={cls} style={style} ref={(el) => { this.$el = el }}>
         <div
@@ -136,7 +153,7 @@ class Swiper extends Nerv.Component {
           }}
         />
         <div className='swiper-wrapper'>{this.props.children}</div>
-        {this.props.indicatorDots ? <div className='swiper-pagination' /> : null}
+        <div className={paginationCls} />
       </div>
     )
   }

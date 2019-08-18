@@ -1,7 +1,7 @@
 import { getCurrentPageUrl } from '@tarojs/utils'
-
-import { isEmptyObject } from './util'
-import { updateComponent } from './lifecycle'
+import { commitAttachRef, detachAllRef, Current, eventCenter } from '@tarojs/taro'
+import { isEmptyObject, isFunction, isArray } from './util'
+import { mountComponent } from './lifecycle'
 import { cacheDataGet, cacheDataHas } from './data-cache'
 import propsManager from './propsManager'
 
@@ -169,6 +169,8 @@ export function componentTrigger (component, key, args) {
     }
     component._pendingStates = []
     component._pendingCallbacks = []
+    // refs
+    detachAllRef(component)
   }
   if (key === 'componentWillMount') {
     component._dirty = false
@@ -193,15 +195,17 @@ function initComponent (ComponentClass, isPage) {
   // 动态组件执行改造函数副本的时,在初始化数据前计算好props
   if (hasPageInited && !isPage) {
     const compid = this.data.compid
-    propsManager.observers[compid] = {
-      component: this.$component,
-      ComponentClass
+    if (compid) {
+      propsManager.observers[compid] = {
+        component: this.$component,
+        ComponentClass
+      }
     }
     const nextProps = filterProps(ComponentClass.defaultProps, propsManager.map[compid], this.$component.props)
     this.$component.props = nextProps
   }
   if (hasPageInited || isPage) {
-    updateComponent(this.$component)
+    mountComponent(this.$component)
   }
 }
 
@@ -211,6 +215,8 @@ function createComponent (ComponentClass, isPage) {
   const componentInstance = new ComponentClass(componentProps)
   componentInstance._constructor && componentInstance._constructor(componentProps)
   try {
+    Current.current = componentInstance
+    Current.index = 0
     componentInstance.state = componentInstance._createData() || componentInstance.state
   } catch (err) {
     if (isPage) {
@@ -252,18 +258,21 @@ function createComponent (ComponentClass, isPage) {
           const query = swan.createSelectorQuery().in(this)
           if (ref.type === 'component') {
             target = this.selectComponent(`#${ref.id}`)
-            target = target.$component || target
+            target = (target && target.$component) || target
           } else {
             target = query.select(`#${ref.id}`)
           }
-          if (target && 'refName' in ref && ref['refName']) {
-            refs[ref.refName] = target
-          } else if (target && 'fn' in ref && typeof ref['fn'] === 'function') {
-            ref['fn'].call(component, target)
-          }
+          commitAttachRef(ref, target, component, refs, true)
           ref.target = target
         })
         component.refs = Object.assign({}, component.refs || {}, refs)
+      }
+      if (component['$$hasLoopRef']) {
+        Current.current = component
+        component._disableEffect = true
+        component._createData(component.state, component.props, true)
+        component._disableEffect = false
+        Current.current = null
       }
       if (!component.__mounted) {
         component.__mounted = true
@@ -271,7 +280,17 @@ function createComponent (ComponentClass, isPage) {
       }
     },
     detached () {
-      componentTrigger(this.$component, 'componentWillUnmount')
+      const component = this.$component
+      componentTrigger(component, 'componentWillUnmount')
+      component.hooks.forEach((hook) => {
+        if (isFunction(hook.cleanup)) {
+          hook.cleanup()
+        }
+      })
+      const events = component.$$renderPropsEvents
+      if (isArray(events)) {
+        events.forEach(e => eventCenter.off(e))
+      }
     }
   }
   if (isPage) {

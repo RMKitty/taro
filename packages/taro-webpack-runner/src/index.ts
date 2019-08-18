@@ -1,3 +1,4 @@
+
 import chalk from 'chalk'
 import * as opn from 'opn'
 import * as path from 'path'
@@ -9,7 +10,7 @@ import buildConf from './config/build.conf'
 import devConf from './config/dev.conf'
 import baseDevServerOption from './config/devServer.conf'
 import prodConf from './config/prod.conf'
-import { appPath, addLeadingSlash, addTrailingSlash, recursiveMerge } from './util'
+import { addLeadingSlash, addTrailingSlash, recursiveMerge } from './util'
 import { bindDevLogger, bindProdLogger, printBuildError } from './util/logHelper'
 import { BuildConfig } from './util/types'
 
@@ -26,9 +27,9 @@ const warnConfigEnableDll = () => {
   console.log(chalk.yellow(`taro@1.2.18版本开始，taro在h5端加强了代码体积控制，抽离dll的收益已经微乎其微，同时也容易导致一些问题（#1800等）。所以h5.enableDll配置项暂时移除。`))
 }
 
-const buildProd = (config: BuildConfig): Promise<void> => {
+const buildProd = (appPath: string, config: BuildConfig): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const webpackChain = prodConf(config)
+    const webpackChain = prodConf(appPath, config)
 
     customizeChain(webpackChain, config.webpackChain)
 
@@ -50,7 +51,7 @@ const buildProd = (config: BuildConfig): Promise<void> => {
   })
 }
 
-const buildDev = async (config: BuildConfig): Promise<any> => {
+const buildDev = async (appPath: string, config: BuildConfig): Promise<any> => {
   return new Promise((resolve, reject) => {
     const conf = buildConf(config)
     const routerConfig = config.router || {}
@@ -59,7 +60,7 @@ const buildDev = async (config: BuildConfig): Promise<any> => {
     const publicPath = conf.publicPath ? addLeadingSlash(addTrailingSlash(conf.publicPath)) : '/'
     const outputPath = path.join(appPath, conf.outputRoot as string)
     const customDevServerOption = config.devServer || {}
-    const webpackChain = devConf(config)
+    const webpackChain = devConf(appPath, config)
 
     customizeChain(webpackChain, config.webpackChain)
 
@@ -106,10 +107,10 @@ const buildDev = async (config: BuildConfig): Promise<any> => {
   })
 }
 
-export default async (config: BuildConfig): Promise<void> => {
+export default async (appPath: string, config: BuildConfig): Promise<void> => {
   if (config.isWatch) {
     try {
-      await buildDev(config)
+      await buildDev(appPath, config)
     } catch (e) {
       console.error(e)
     }
@@ -118,9 +119,10 @@ export default async (config: BuildConfig): Promise<void> => {
       warnConfigEnableDll()
     }
     try {
-      await buildProd(config)
+      await buildProd(appPath, config)
     } catch (e) {
       console.error(e)
+      process.exit(1);
     }
   }
 }
