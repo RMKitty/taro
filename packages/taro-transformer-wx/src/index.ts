@@ -25,7 +25,7 @@ import {
   THIRD_PARTY_COMPONENTS,
   INTERNAL_GET_ORIGNAL,
   setLoopOriginal,
-  GEL_ELEMENT_BY_ID,
+  HANDLE_LOOP_REF,
   lessThanSignPlacehold,
   COMPONENTS_PACKAGE_NAME,
   quickappComponentName,
@@ -511,7 +511,7 @@ export default function transform (options: Options): TransformResult {
 
       const forStatement = path.findParent(isForStatement)
       if (isForStatement(forStatement)) {
-        throw codeFrameError(forStatement.node, '不行使用 for 循环操作 JSX 元素，详情：https://github.com/NervJS/taro/blob/master/packages/eslint-plugin-taro/docs/manipulate-jsx-as-array.md')
+        throw codeFrameError(forStatement.node, '不能使用 for 循环操作 JSX 元素，详情：https://github.com/NervJS/taro/blob/master/packages/eslint-plugin-taro/docs/manipulate-jsx-as-array.md')
       }
 
       const loopCallExpr = path.findParent(p => isArrayMapCallExpression(p))
@@ -528,15 +528,20 @@ export default function transform (options: Options): TransformResult {
     JSXOpeningElement (path) {
       const { name } = path.node.name as t.JSXIdentifier
       const binding = path.scope.getBinding(name)
-      if (process.env.NODE_ENV !== 'test' && DEFAULT_Component_SET.has(name) && binding && binding.kind === 'module') {
+      if (process.env.NODE_ENV !== 'test' && binding && binding.kind === 'module') {
         const bindingPath = binding.path
         if (bindingPath.parentPath.isImportDeclaration()) {
           const source = bindingPath.parentPath.node.source
-          if (source.value !== COMPONENTS_PACKAGE_NAME) {
+          if (DEFAULT_Component_SET.has(name) && source.value !== COMPONENTS_PACKAGE_NAME) {
             throw codeFrameError(bindingPath.parentPath.node, `内置组件名: '${name}' 只能从 ${COMPONENTS_PACKAGE_NAME} 引入。`)
+          }
+
+          if (name === 'Fragment') {
+            path.node.name = t.jSXIdentifier('block')
           }
         }
       }
+
       if (Adapter.type === Adapters.quickapp) {
         if (name === 'View') {
           path.node.name = t.jSXIdentifier('div')
@@ -711,7 +716,7 @@ export default function transform (options: Options): TransformResult {
           t.importSpecifier(t.identifier(INTERNAL_SAFE_GET), t.identifier(INTERNAL_SAFE_GET)),
           t.importSpecifier(t.identifier(INTERNAL_GET_ORIGNAL), t.identifier(INTERNAL_GET_ORIGNAL)),
           t.importSpecifier(t.identifier(INTERNAL_INLINE_STYLE), t.identifier(INTERNAL_INLINE_STYLE)),
-          t.importSpecifier(t.identifier(GEL_ELEMENT_BY_ID), t.identifier(GEL_ELEMENT_BY_ID)),
+          t.importSpecifier(t.identifier(HANDLE_LOOP_REF), t.identifier(HANDLE_LOOP_REF)),
           t.importSpecifier(t.identifier(GEN_COMP_ID), t.identifier(GEN_COMP_ID)),
           t.importSpecifier(t.identifier(GEN_LOOP_COMPID), t.identifier(GEN_LOOP_COMPID))
         )
@@ -762,7 +767,7 @@ export default function transform (options: Options): TransformResult {
       t.importSpecifier(t.identifier(INTERNAL_SAFE_GET), t.identifier(INTERNAL_SAFE_GET)),
       t.importSpecifier(t.identifier(INTERNAL_GET_ORIGNAL), t.identifier(INTERNAL_GET_ORIGNAL)),
       t.importSpecifier(t.identifier(INTERNAL_INLINE_STYLE), t.identifier(INTERNAL_INLINE_STYLE)),
-      t.importSpecifier(t.identifier(GEL_ELEMENT_BY_ID), t.identifier(GEL_ELEMENT_BY_ID)),
+      t.importSpecifier(t.identifier(HANDLE_LOOP_REF), t.identifier(HANDLE_LOOP_REF)),
       t.importSpecifier(t.identifier(GEN_COMP_ID), t.identifier(GEN_COMP_ID)),
       t.importSpecifier(t.identifier(GEN_LOOP_COMPID), t.identifier(GEN_LOOP_COMPID))
     ]

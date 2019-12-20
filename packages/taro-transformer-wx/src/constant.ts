@@ -70,7 +70,7 @@ export const INTERNAL_INLINE_STYLE = 'internal_inline_style'
 
 export const INTERNAL_GET_ORIGNAL = 'internal_get_original'
 
-export const GEL_ELEMENT_BY_ID = 'getElementById'
+export const HANDLE_LOOP_REF = 'handleLoopRef'
 
 export const PROPS_MANAGER = 'propsManager'
 
@@ -83,6 +83,8 @@ export const CLASS_COMPONENT_UID = '_$uid'
 export let LOOP_STATE = '$loopState'
 
 export const setLoopState = (s: string) => LOOP_STATE = s
+
+export let PREV_COMPID = '$prevCompid'
 
 export let COMPID = '$compid'
 
@@ -152,6 +154,7 @@ export const setFnPrefix = (s: string) => FN_PREFIX = s
 
 export const quickappComponentName = new Set([
   'Swiper',
+  'Audio',
   'Image',
   'Progress',
   // 'Text',

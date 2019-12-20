@@ -19,6 +19,9 @@ const onAndSyncApis = {
   onHCEMessage: true,
   onGetWifiList: true,
   onWifiConnected: true,
+  offWifiConnected: true,
+  offGetWifiList: true,
+  onDeviceMotionChange: true,
   setStorageSync: true,
   getStorageSync: true,
   getStorageInfoSync: true,
@@ -45,6 +48,8 @@ const onAndSyncApis = {
   offAppHide: true,
   onAudioInterruptionEnd: true,
   onAudioInterruptionBegin: true,
+  onLocationChange: true,
+  offLocationChange: true
 }
 const noPromiseApis = {
   // 媒体
@@ -86,6 +91,7 @@ const noPromiseApis = {
   hideKeyboard: true,
   stopPullDownRefresh: true,
   createIntersectionObserver: true,
+  nextTick: true,
 
   // 菜单
   getMenuButtonBoundingClientRect: true,
@@ -103,7 +109,10 @@ const noPromiseApis = {
 
   // 广告
   createRewardedVideoAd: true,
-  createInterstitialAd: true
+  createInterstitialAd: true,
+
+  // 调试
+  getRealtimeLogManager: true
 }
 const otherApis = {
   // 网络
@@ -154,6 +163,9 @@ const otherApis = {
   reLaunch: true,
 
   // 位置
+  startLocationUpdate: true,
+  startLocationUpdateBackground: true,
+  stopLocationUpdate: true,
   getLocation: true,
   chooseLocation: true,
   openLocation: true,
@@ -198,6 +210,8 @@ const otherApis = {
   getWifiList: true,
   setWifiList: true,
   getConnectedWifi: true,
+  startDeviceMotionListening: true,
+  stopDeviceMotionListening: true,
 
   // 界面
   pageScrollTo: true,
@@ -223,6 +237,8 @@ const otherApis = {
 
   setBackgroundColor: true,
   setBackgroundTextStyle: true,
+  getSelectedTextRange: true,
+  hideHomeButton: true,
 
   // 第三方平台
   getExtConfig: true,
@@ -254,6 +270,9 @@ const otherApis = {
   checkIsSupportSoterAuthentication: true,
   startSoterAuthentication: true,
   checkIsSoterEnrolledInDevice: true,
+
+  // 订阅消息
+  requestSubscribeMessage: true,
 
   setEnableDebug: true,
   // 支付宝小程序API

@@ -1,5 +1,5 @@
 import { Adapters, Adapter } from './adapter'
-import { quickappComponentName, DEFAULT_Component_SET_COPY } from './constant'
+import { quickappComponentName, DEFAULT_Component_SET_COPY, LOOP_ORIGINAL } from './constant'
 import { transformOptions } from './options'
 import { camelCase } from 'lodash'
 import { isTestEnv } from './env'
@@ -49,6 +49,12 @@ function stringifyAttributes (input: object, componentName: string) {
       }
     }
 
+    if (Adapters.weapp === Adapter.type && key === 'key' && typeof value === 'string') {
+      if (value.startsWith(LOOP_ORIGINAL)) {
+        value = value.replace(LOOP_ORIGINAL + '.', '')
+      }
+    }
+
     if (value !== true) {
       attribute += `="${String(value)}"`
     }
@@ -74,6 +80,10 @@ export const createHTMLElement = (options: Options, isFirstEmit = false) => {
     const nameCapitalized = capitalized(name)
     if (quickappComponentName.has(nameCapitalized)) {
       options.name = `taro-${name}`
+      if (options.attributes['className']) {
+        options.attributes['class'] = options.attributes['className']
+        delete options.attributes['className']
+      }
     }
     if (isFirstEmit && name === 'div' && transformOptions.isRoot) {
       options.name = 'taro-page'
@@ -85,12 +95,8 @@ export const createHTMLElement = (options: Options, isFirstEmit = false) => {
         }
       }
     }
-
-    if (isFirstEmit && name === 'div' && !transformOptions.isRoot) {
-      options.attributes = {
-        ...options.attributes,
-        'if': '{{priTaroCompReady}}'
-      }
+    if (name === 'view') {
+      options.name = 'div'
     }
   }
 

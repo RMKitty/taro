@@ -14,6 +14,7 @@ export interface IProjectConf {
   projectName: string,
   projectDir: string,
   templateSource: string,
+  clone?: boolean,
   template: string,
   description?: string,
   typescript?: boolean,
@@ -21,7 +22,8 @@ export interface IProjectConf {
   date?: string,
   src?: string,
   sourceRoot?: string,
-  env?: string
+  env?: string,
+  autoInstall?: boolean
 }
 
 interface AskMethods {
@@ -95,7 +97,7 @@ export default class Project extends Creator {
     }
 
     // 从模板源下载模板
-    return fetchTemplate(this.conf.templateSource, this.templatePath(''))
+    return fetchTemplate(this.conf.templateSource, this.templatePath(''), this.conf.clone)
   }
 
   ask (templateChoices: string[]) {
