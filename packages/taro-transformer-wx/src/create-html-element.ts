@@ -49,10 +49,13 @@ function stringifyAttributes (input: object, componentName: string) {
       }
     }
 
-    if (Adapters.weapp === Adapter.type && key === 'key' && typeof value === 'string') {
-      if (value.startsWith(LOOP_ORIGINAL)) {
-        value = value.replace(LOOP_ORIGINAL + '.', '')
-      }
+    if (
+      process.env.NODE_ENV !== 'test' &&
+      (Adapters.weapp === Adapter.type || Adapters.qq === Adapter.type) &&
+      key === Adapter.key &&
+      typeof value === 'string'
+    ) {
+      value = value.split(`${LOOP_ORIGINAL}.`).join('')
     }
 
     if (value !== true) {

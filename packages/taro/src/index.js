@@ -37,12 +37,15 @@ import {
   useShareAppMessage,
   useTabItemTap,
   useRouter,
+  useShareTimeline,
+  useAddToFavorites,
   useScope,
   forceUpdateCallback as internal_force_update
 } from './hooks'
 import { Current } from './current'
 import { createContext } from './create-context'
 import { memo } from './memo'
+import { setIsUsingDiff, getIsUsingDiff } from './util'
 
 let eventCenter
 if (process.env.TARO_ENV === 'alipay') {
@@ -91,6 +94,8 @@ export {
   useShareAppMessage,
   useTabItemTap,
   useRouter,
+  useShareTimeline,
+  useAddToFavorites,
   useScope,
   useRef,
   useCallback,
@@ -99,7 +104,9 @@ export {
   invokeEffects,
   useContext,
   createContext,
-  memo
+  memo,
+  getIsUsingDiff,
+  setIsUsingDiff
 }
 
 export default {
@@ -147,5 +154,7 @@ export default {
   invokeEffects,
   useContext,
   createContext,
-  memo
+  memo,
+  getIsUsingDiff,
+  setIsUsingDiff
 }

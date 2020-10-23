@@ -67,13 +67,13 @@ declare namespace Taro {
    *   "unionId": "UNIONID",
    *   "watermark": {
    *     "appid":"APPID",
-   *     "timestamp":TIMESTAMP
+   *     "timestamp": TIMESTAMP
    *   }
    * }
    * ```
    * @see https://developers.weixin.qq.com/miniprogram/dev/api/open-api/user-info/wx.getUserInfo.html
    */
-  function getUserInfo(option: getUserInfo.Option): Promise<getUserInfo.SuccessCallbackResult>
+  function getUserInfo(option?: getUserInfo.Option): Promise<getUserInfo.SuccessCallbackResult>
 
 
     
